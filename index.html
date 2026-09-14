@@ -816,7 +816,7 @@ function analyzeStructure(lines){
    Worker 调用百度短语音识别 → 返回文本填入搜索框。
    使用前：1) 在 CF Dashboard 创建 Worker 并粘贴 worker.js，配置百度密钥；
            2) 把下面 WORKER_URL 改成你的 Worker 地址（如 https://xxx.workers.dev） */
-var WORKER_URL = 'https://hzxs163.qzz.io';
+var WORKER_URL = 'https://dscan.hzxs163.qzz.io';
 var voiceBtn = $('voiceBtn'), voiceHint = $('voiceHint'), kwInput = $('filterKeyword');
 var listening = false, starting = false, silenceTimer = null, levelTimer = null, maxTimer = null;
 var mediaRec = null, stream = null, chunks = [], audioCtx = null, analyser = null, levelData = null;
