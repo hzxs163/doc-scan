@@ -816,7 +816,7 @@ function analyzeStructure(lines){
    Worker 调用百度短语音识别 → 返回文本填入搜索框。
    使用前：1) 在 CF Dashboard 创建 Worker 并粘贴 worker.js，配置百度密钥；
            2) 把下面 WORKER_URL 改成你的 Worker 地址（如 https://xxx.workers.dev） */
-var WORKER_URL = 'https://dscan.hzxs163.qzz.io/';
+var WORKER_URL = 'https://dscan.hzxs163.qzz.io';
 var voiceBtn = $('voiceBtn'), voiceHint = $('voiceHint'), kwInput = $('filterKeyword');
 var listening = false, starting = false, silenceTimer = null, levelTimer = null, maxTimer = null;
 var mediaRec = null, stream = null, chunks = [], audioCtx = null, analyser = null, levelData = null;
@@ -848,7 +848,11 @@ function startVoice(){
   if(listening || starting || !canVoice()) return;
   starting = true;
   setHint('🎤 正在请求麦克风权限…', 'active');
-  navigator.mediaDevices.getUserMedia({ audio: true }).then(function(s){
+  navigator.mediaDevices.getUserMedia({ audio: {
+    autoGainControl: true,  /* 自动增益：放大小声说话 */
+    echoCancellation: true, /* 回声消除 */
+    noiseSuppression: true  /* 降噪 */
+  } }).then(function(s){
     stream = s;
     chunks = [];
     var mime = (window.MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
@@ -871,8 +875,9 @@ function startVoice(){
     levelData = new Uint8Array(analyser.fftSize);
     listening = true; starting = false;
     voiceBtn.classList.add('listening');
-    setHint('🎤 正在聆听，请说话…（停顿 2.5 秒自动结束）', 'active');
-    silenceTimer = setTimeout(stopVoice, SILENCE_MS);
+    setHint('🎤 正在聆听，请说话…（停顿 1.5 秒自动结束）', 'active');
+    /* 初始给 3 秒准备期，避免点击后还没开口就被静音计时截断 */
+    silenceTimer = setTimeout(stopVoice, SILENCE_MS * 2);
     maxTimer = setTimeout(stopVoice, MAX_RECORD_MS);
     levelTimer = setTimeout(checkLevel, 150);
   }).catch(function(err){
@@ -891,7 +896,7 @@ function checkLevel(){
     sum += v * v;
   }
   var rms = Math.sqrt(sum / levelData.length);
-  if(rms > 0.015){
+  if(rms > 0.008){
     /* 检测到声音：重置静音计时 */
     if(silenceTimer){ clearTimeout(silenceTimer); silenceTimer = null; }
     silenceTimer = setTimeout(stopVoice, SILENCE_MS);
@@ -930,6 +935,17 @@ function handleStop(){
     var actx = new (window.AudioContext || window.webkitAudioContext)();
     actx.decodeAudioData(ev.target.result, function(buf){
       downsampleTo16k(buf).then(function(rendered){
+        /* 发送前校验整体音量：基本静音的音频不上传，避免百度返回空结果/幻听 */
+        var ch = rendered.getChannelData(0);
+        var sum = 0;
+        for(var i = 0; i < ch.length; i++) sum += ch[i] * ch[i];
+        var rms = Math.sqrt(sum / (ch.length || 1));
+        if(rms < 0.005){
+          actx.close();
+          setHint('⚠️ 没有检测到声音，请靠近麦克风或大声一点重试');
+          setTimeout(function(){ setHint(''); }, 3000);
+          return;
+        }
         var wav = encodeWav(rendered);
         var wavBlob = new Blob([wav], { type: 'audio/wav' });
         var fr2 = new FileReader();
