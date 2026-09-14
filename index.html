@@ -621,7 +621,6 @@ advHead.addEventListener('click', function(){
 var structuredContent = [];
 var currentItems = [];
 var currentFileName = '';
-var lastEnter = 0;
 function showProgress(txt){
   $('progress').classList.add('show');
   $('progressText').textContent = txt || '处理中…';
@@ -1152,34 +1151,54 @@ $('useRegex').addEventListener('change', function(){
     performFilter();
   });
 });
-kwInput.addEventListener('keydown', function(e){
-  if(e.key === 'Enter'){
-    var now = Date.now();
-    if(now - lastEnter < 320){
-      kwInput.value = '';
-      performFilter();
-      toast('已清空关键词','info',1800);
-    }
-    lastEnter = now;
-  }
-  if(e.key === 'Escape'){ kwInput.value = ''; performFilter(); }
-});
-/* 双击 + 唤起语音输入 */
+/* ========== 全局快捷键 ========== */
+/* 清空关键词并重新筛选 */
+function clearKeywordGlobal(){
+  kwInput.value = '';
+  performFilter();
+}
+var lastEnter = 0;
 var lastPlus = 0;
 document.addEventListener('keydown', function(e){
+  /* Ctrl+K 聚焦搜索框 */
   if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k'){
-    e.preventDefault(); kwInput.focus(); kwInput.select();
+    e.preventDefault(); kwInput.focus(); kwInput.select(); return;
   }
+  /* Ctrl+D 切换主题 */
   if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd'){
     e.preventDefault();
     applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+    return;
   }
+  /* Esc 全局清空关键词 */
+  if(e.key === 'Escape'){
+    e.preventDefault();
+    clearKeywordGlobal();
+    toast('已清空关键词','info',1500);
+    return;
+  }
+  /* 双击回车全局清空关键词 */
+  if(e.key === 'Enter'){
+    var nowEnter = Date.now();
+    if(nowEnter - lastEnter < 320){
+      e.preventDefault();
+      lastEnter = 0;
+      clearKeywordGlobal();
+      toast('已清空关键词','info',1500);
+    } else {
+      lastEnter = nowEnter;
+    }
+    return;
+  }
+  /* 双击 + 全局唤起语音输入：先清空输入框，再启动语音 */
   if(e.key === '+' || (e.key === '=' && e.shiftKey)){
-    if(document.activeElement === kwInput) return;
-    var now = Date.now();
-    if(now - lastPlus < 400){
+    var nowPlus = Date.now();
+    if(nowPlus - lastPlus < 400){
       e.preventDefault();
       lastPlus = 0;
+      /* 先清空输入框内容（不弹提示，避免干扰语音） */
+      kwInput.value = '';
+      performFilter();
       if(!SR){
         toast('当前浏览器不支持语音输入','warn');
       } else if(listening){
@@ -1189,8 +1208,9 @@ document.addEventListener('keydown', function(e){
         startVoice();
       }
     } else {
-      lastPlus = now;
+      lastPlus = nowPlus;
     }
+    return;
   }
 });
 $('clearButton').addEventListener('click', function(){
@@ -1201,7 +1221,7 @@ $('clearButton').addEventListener('click', function(){
   $('highlightMatches').checked = true;
   $('useRegex').checked = false;
   $('regexWarning').style.display = 'none';
-  // 保留模糊匹配勾选状态（老板要求：重置不取消模糊匹配）
+  /* 保留模糊匹配勾选状态 */
   syncFuzzyUI();
   var keepTh = loadThreshold();
   $('fuzzyThreshold').value = keepTh;
