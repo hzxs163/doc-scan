@@ -1157,6 +1157,8 @@ kwInput.addEventListener('keydown', function(e){
   }
   if(e.key === 'Escape'){ kwInput.value = ''; performFilter(); }
 });
+/* 双击 + 唤起语音输入 */
+var lastPlus = 0;
 document.addEventListener('keydown', function(e){
   if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k'){
     e.preventDefault(); kwInput.focus(); kwInput.select();
@@ -1164,6 +1166,24 @@ document.addEventListener('keydown', function(e){
   if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd'){
     e.preventDefault();
     applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  }
+  if(e.key === '+' || (e.key === '=' && e.shiftKey)){
+    if(document.activeElement === kwInput) return;
+    var now = Date.now();
+    if(now - lastPlus < 400){
+      e.preventDefault();
+      lastPlus = 0;
+      if(!SR){
+        toast('当前浏览器不支持语音输入','warn');
+      } else if(listening){
+        stopVoice();
+        toast('语音输入已停止','info',1500);
+      } else {
+        startVoice();
+      }
+    } else {
+      lastPlus = now;
+    }
   }
 });
 $('clearButton').addEventListener('click', function(){
@@ -1188,7 +1208,7 @@ $('clearButton').addEventListener('click', function(){
   toast('筛选条件已重置','info',1800);
 });
 $('helpBtn').addEventListener('click', function(){
-  toast('快捷键：Ctrl+K 聚焦搜索 · Ctrl+D 切换主题 · Esc 清空 · 双击回车清空', 'info', 5200);
+  toast('快捷键：Ctrl+K 聚焦搜索 · Ctrl+D 切换主题 · 双击 + 语音输入 · Esc 清空 · 双击回车清空', 'info', 5200);
 });
 /* 恢复模糊匹配开关状态 */
 $('fuzzyMatch').checked = loadFuzzy();
