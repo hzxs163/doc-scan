@@ -131,6 +131,9 @@ html[data-theme="dark"] body::before{mix-blend-mode:screen;opacity:.5;}
   transition:border-color .25s,box-shadow .25s,background-color .3s;
 }
 .card:hover{border-color:var(--border-strong);}
+/* 导入区 + 文件信息条：左右排列 */
+.import-row{display:flex;align-items:stretch;gap:10px;flex-wrap:wrap;}
+.import-row .dropzone{flex:1;min-width:240px;}
 .dropzone{
   border:1.5px dashed var(--gold);
   border-radius:var(--radius-sm);
@@ -158,10 +161,11 @@ html[data-theme="dark"] body::before{mix-blend-mode:screen;opacity:.5;}
   border:1px solid var(--border);font-family:var(--mono);
 }
 .file-bar{
-  display:none;align-items:center;gap:8px;margin-top:6px;padding:6px 10px;
+  display:none;align-items:center;gap:8px;padding:6px 10px;
   border-radius:var(--radius-sm);
   background:var(--surface-2);border:1px solid var(--border);
   font-size:13px;
+  flex:0 1 auto;max-width:46%;
 }
 .file-bar.show{display:flex;}
 .file-bar .fname{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
@@ -341,6 +345,7 @@ mark{background:var(--hl);color:inherit;padding:0 3px;border-radius:0;font-weigh
   .res-list{max-height:none;}
   .toasts{left:12px;right:12px;top:12px;}
   .toast{max-width:none;}
+  .file-bar{max-width:none;}
 }
 </style>
 </head>
@@ -377,32 +382,34 @@ mark{background:var(--hl);color:inherit;padding:0 3px;border-radius:0;font-weigh
     </div>
   </div>
   <div style="margin-bottom:12px">
-    <div class="dropzone" id="dropzone">
-      <div class="dz-icon">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+    <div class="import-row">
+      <div class="dropzone" id="dropzone">
+        <div class="dz-icon">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <div class="dz-text">
+          <h3><b>导入文档</b> · 拖拽到此处或点击选择</h3>
+        </div>
+        <div class="dz-formats">
+          <span class="chip">docx</span><span class="chip">pdf</span><span class="chip">txt</span><span class="chip">rtf</span>
+        </div>
+        <input type="file" id="fileInput" accept=".docx,.pdf,.txt,.rtf" style="display:none">
+      </div>
+      <div class="file-bar" id="fileBar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary);flex-shrink:0">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
         </svg>
+        <span class="fname" id="fileName">—</span>
+        <span class="fmeta" id="fileMeta"></span>
+        <button class="btn ghost icon" id="removeFile" title="移除文件" style="width:30px;height:30px;padding:0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
-      <div class="dz-text">
-        <h3><b>导入文档</b> · 拖拽到此处或点击选择</h3>
-      </div>
-      <div class="dz-formats">
-        <span class="chip">docx</span><span class="chip">pdf</span><span class="chip">txt</span><span class="chip">rtf</span>
-      </div>
-      <input type="file" id="fileInput" accept=".docx,.pdf,.txt,.rtf" style="display:none">
-    </div>
-    <div class="file-bar" id="fileBar">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary);flex-shrink:0">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-      </svg>
-      <span class="fname" id="fileName">—</span>
-      <span class="fmeta" id="fileMeta"></span>
-      <button class="btn ghost icon" id="removeFile" title="移除文件" style="width:30px;height:30px;padding:0">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
     </div>
     <div class="progress" id="progress">
       <div class="bar"><i id="barFill"></i></div>
