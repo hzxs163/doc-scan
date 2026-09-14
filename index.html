@@ -812,7 +812,7 @@ function analyzeStructure(lines){
 }
 var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 var voiceBtn = $('voiceBtn'), voiceHint = $('voiceHint'), kwInput = $('filterKeyword');
-var recog = null, listening = false, silenceTimer = null, interim = '';
+var recog = null, listening = false, starting = false, silenceTimer = null, interim = '';
 function setHint(text, cls){
   if(text){
     voiceHint.textContent = text;
@@ -829,16 +829,18 @@ if(SR){
   recog.interimResults = true;
   recog.maxAlternatives = 1;
   recog.onstart = function(){
-    listening = true; interim = '';
+    listening = true; starting = false; interim = '';
     voiceBtn.classList.add('listening');
     setHint('🎤 正在聆听，请说话…（停顿 2.5 秒自动结束）', 'active');
   };
   recog.onerror = function(ev){
+    starting = false;
     var m = { 'not-allowed':'请允许浏览器使用麦克风权限', 'no-speech':'没有检测到语音，请重试', 'audio-capture':'未找到麦克风设备' };
     setHint('⚠️ ' + (m[ev.error] || ('语音识别出错：' + ev.error)));
     stopVoice();
   };
   recog.onend = function(){
+    starting = false;
     if(listening){
       if(interim){ appendVoice(interim); interim = ''; }
       stopVoice();
@@ -868,21 +870,32 @@ if(SR){
   };
   voiceBtn.addEventListener('click', function(e){
     e.stopPropagation();
-    if(listening) stopVoice(); else startVoice();
+    if(listening || starting) stopVoice(); else startVoice();
   });
 } else {
   voiceBtn.style.display = 'none';
   setHint('⚠️ 当前浏览器不支持语音输入，建议使用 Chrome / Edge / Safari');
 }
 function startVoice(){
-  try{ recog.start(); }
-  catch(err){
-    try{ recog.stop(); }catch(e){}
-    setTimeout(function(){ try{ recog.start(); }catch(e2){ setHint('⚠️ 无法启动语音识别：' + e2.message); } }, 220);
+  if(listening || starting) return;   /* 已在运行或正在启动，直接忽略 */
+  starting = true;
+  try{
+    recog.start();
+  }catch(err){
+    starting = false;
+    /* 已经启动的情况：当作已启动处理，不报错 */
+    if(err && err.message && err.message.indexOf('already started') > -1){
+      listening = true;
+      voiceBtn.classList.add('listening');
+      setHint('🎤 正在聆听，请说话…（停顿 2.5 秒自动结束）', 'active');
+      return;
+    }
+    setHint('⚠️ 无法启动语音识别：' + (err && err.message ? err.message : err));
   }
 }
 function stopVoice(){
   listening = false;
+  starting = false;
   voiceBtn.classList.remove('listening');
   if(silenceTimer){ clearTimeout(silenceTimer); silenceTimer = null; }
   try{ recog.stop(); }catch(e){}
@@ -1201,7 +1214,7 @@ document.addEventListener('keydown', function(e){
       performFilter();
       if(!SR){
         toast('当前浏览器不支持语音输入','warn');
-      } else if(listening){
+      } else if(listening || starting){
         stopVoice();
         toast('语音输入已停止','info',1500);
       } else {
