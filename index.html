@@ -821,7 +821,7 @@ var voiceBtn = $('voiceBtn'), voiceHint = $('voiceHint'), kwInput = $('filterKey
 var listening = false, starting = false, silenceTimer = null, levelTimer = null, maxTimer = null;
 var mediaRec = null, stream = null, chunks = [], audioCtx = null, analyser = null, levelData = null;
 var MAX_RECORD_MS = 60000; /* 百度短语音识别上限 60 秒 */
-var SILENCE_MS = 2500;
+var SILENCE_MS = 1500;
 
 function canVoice(){
   return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
@@ -874,7 +874,7 @@ function startVoice(){
     setHint('🎤 正在聆听，请说话…（停顿 2.5 秒自动结束）', 'active');
     silenceTimer = setTimeout(stopVoice, SILENCE_MS);
     maxTimer = setTimeout(stopVoice, MAX_RECORD_MS);
-    levelTimer = setTimeout(checkLevel, 300);
+    levelTimer = setTimeout(checkLevel, 150);
   }).catch(function(err){
     starting = false;
     setHint('⚠️ 无法访问麦克风：' + (err && err.name ? err.name : '请检查权限设置'));
@@ -891,12 +891,12 @@ function checkLevel(){
     sum += v * v;
   }
   var rms = Math.sqrt(sum / levelData.length);
-  if(rms > 0.02){
+  if(rms > 0.015){
     /* 检测到声音：重置静音计时 */
     if(silenceTimer){ clearTimeout(silenceTimer); silenceTimer = null; }
     silenceTimer = setTimeout(stopVoice, SILENCE_MS);
   }
-  levelTimer = setTimeout(checkLevel, 300);
+  levelTimer = setTimeout(checkLevel, 150);
 }
 
 function stopVoice(){
